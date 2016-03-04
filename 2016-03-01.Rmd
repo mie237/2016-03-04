@@ -1,0 +1,151 @@
+---
+title: 'MIE237'
+author: "Neil Montgomery"
+date: "2016-03-01"
+output: 
+  ioslides_presentation: 
+    css: 'styles.css' 
+    widescreen: true 
+    transition: 0.001
+---
+\newcommand{\Var}[1]{\text{Var}\left( #1 \right)}
+\newcommand{\E}[1]{E\left( #1 \right)}
+\newcommand{\Sample}[1]{#1_1,\ldots,#1_n}
+\newcommand{\od}[2]{\overline #1_{#2\cdot}}
+\newcommand{\flist}[2]{\{#1_1, #1_2, \ldots, #1_#2\}}
+\newcommand{\samp}[2]{#1_1, #1_2, \ldots, #1_#2}
+\renewcommand{\bar}[1]{\overline{#1}}
+\newcommand{\ve}{\varepsilon}
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+
+
+
+```{r, echo=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+```
+
+
+
+```{r, message=FALSE}
+library(dplyr)
+library(ggplot2)
+set.seed(2)
+n <- 40
+x <- seq(1, 10, length.out = n)
+y1 <-  1 + x + rnorm(n, 0, 0.1)
+
+y2 <- 1 - x + rnorm(n, 0, 1)
+
+y3 <- 1 + x + rnorm(n, 0, 5)
+
+set.seed(5)
+y4 <- 1 + x + rnorm(n, 0, 2)
+
+y5 <- 20 - (x - 8)^2 + rnorm(n, 0, 8)
+
+
+set.seed(42)
+y6 <- 1 + x + rnorm(n, 0, 2)
+
+x2 <- seq(1, 10, length.out = 2*n)
+y7 <- 1 + x2 + rnorm(2*n, 0, 2)
+```
+
+# New Topic: Correlation
+
+## Preview of "correlation" (from 2016-01-29)
+
+Recall $\text{Cov}(X,Y) = E(X-E(X))(Y-E(Y)) = E(XY)-E(X)E(Y)$.
+
+Measures linear relationship between $X$ and $Y$.
+
+A related measure that divides by the two standard deviations:
+$$\rho = \frac{\text{Cov}(X,Y)}{\sqrt{\Var X \Var Y}}$$
+
+"Correlation coefficient" $\rho$ is a \textit{theoretical} measure of the linear relationship between the random variables $X$ and $Y$. We'd like an analogous *empirical* measure for *sample data*.
+
+## Correlation
+
+```{r, echo=FALSE, fig.height=3, fig.width=3}
+data.frame(x, y1) %>% 
+  ggplot(aes(x=x, y=y1)) + geom_point() +
+  geom_hline(yintercept = mean(y1)) + 
+  geom_vline(xintercept = mean(x))
+
+data.frame(x, y2) %>% 
+  ggplot(aes(x=x, y=y2)) + geom_point() +
+  geom_hline(yintercept = mean(y2)) + 
+  geom_vline(xintercept = mean(x))
+```
+
+'Twill be based on:
+$$S_{xy}=\sum_{i=1}^n \left(x_i-\overline x\right)
+\left(y_i - \overline y\right)$$
+
+## Sample correlation coefficient { .build }
+
+Define:
+$$r = \frac{S_{xy}}{\sqrt{S_{xx}{S_{yy}}}}$$
+
+$r$ is an estimator of $\rho$, called the "sample correlation coefficient". 
+
+In regression analysis the $x$ variable is considered fixed, and $y$ is a function of $x$.
+
+Correlation is a property of $Y$ and $X$ both random, and correlation is symmetric in $X$ and $Y$.
+
+Nevertheless we use (misuse?) sample correlation coefficient also in a regression context as a useful numerical summary of a bivariate relationship.
+
+## Connection with $R^2$
+
+Recall that $S_{yy} = \sum (y_i - \bar y)^2 = SST$ and $R^2 = SSR\big/SST = 1-SSE\big/SST$.
+
+It turns out also that $SSE = S_{yy} - \hat\beta_1S_{xy}$. So:
+$$\begin{align*}
+R^2 &= 1 - \frac{SSE}{SST}\\
+&= 1 - \frac{S_{yy} - \hat\beta_1S_{xy}}{S_{yy}}\\
+&= 1 - \left(1 - \frac{\hat\beta_1S_{xy}}{S_{yy}}\right)\\
+&= \frac{S_{xy}^2}{S_{xx}S_{yy}} = (r)^2\end{align*}$$
+
+## Other properties of $r$ { .build }
+
+Since $0 \le R^2 \le 1$ it follows $-1 \le r \le 1$.
+
+Also:
+$$r = \hat\beta_1\sqrt{\frac{S_{xy}}{S_{xx}}}$$
+
+It is possible to do things like test $H_0: \rho=0$ versus $H_1: \rho\ne 0$ using $r$, but we will not cover this.
+
+## Examples
+
+```{r, fig.width=3, fig.height=2.5}
+data.frame(x, y1) %>% 
+  ggplot(aes(x=x, y=y1)) + geom_point() + 
+  ggtitle(substitute(paste(r, " = ", r1), list(r1 = round(cor(x, y1), 3))))
+data.frame(x, y2) %>% 
+  ggplot(aes(x=x, y=y2)) + geom_point() + 
+  ggtitle(substitute(paste(r, " = ", r2), list(r2 = round(cor(x, y2), 3))))
+data.frame(x, y3) %>% 
+  ggplot(aes(x=x, y=y3)) + geom_point() + 
+  ggtitle(substitute(paste(r, " = ", r3), list(r3 = round(cor(x, y3), 3))))
+
+y9 <- 10 + rnorm(n, 0, 3)
+data.frame(x, y9) %>% 
+  ggplot(aes(x=x, y=y9)) + geom_point() + 
+  ggtitle(substitute(paste(r, " = ", r9), list(r9 = round(cor(x, y9), 3))))
+
+
+y10 <- 10 + (x - mean(x))^2 + rnorm(n, 0, 0.01)
+data.frame(x, y10) %>% 
+  ggplot(aes(x=x, y=y10)) + geom_point() + 
+  ggtitle(substitute(paste(r, " = ", r10), list(r10 = round(cor(x, y10), 3))))
+
+
+
+x3 <- c(x, max(x) + 12.5)
+y11 <- c(rnorm(n, 0, 0.25), 3)
+data.frame(x3, y11) %>% 
+  ggplot(aes(x=x3, y=y11)) + geom_point() + 
+  ggtitle(substitute(paste(r, " = ", r11), list(r11 = round(cor(x3, y11), 3))))
+```
+
+
