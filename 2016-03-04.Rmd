@@ -1,0 +1,305 @@
+---
+title: 'MIE237'
+author: "Neil Montgomery"
+date: "2016-03-01"
+output: 
+  ioslides_presentation: 
+    css: 'styles.css' 
+    widescreen: true 
+    transition: 0.001
+---
+\newcommand{\Var}[1]{\text{Var}\left( #1 \right)}
+\newcommand{\E}[1]{E\left( #1 \right)}
+\newcommand{\Sample}[1]{#1_1,\ldots,#1_n}
+\newcommand{\od}[2]{\overline #1_{#2\cdot}}
+\newcommand{\flist}[2]{\{#1_1, #1_2, \ldots, #1_#2\}}
+\newcommand{\samp}[2]{#1_1, #1_2, \ldots, #1_#2}
+\renewcommand{\bar}[1]{\overline{#1}}
+\newcommand{\ve}{\varepsilon}
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+
+
+
+```{r, echo=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+options(scipen = 999)
+```
+
+## Model assumption wrap-up
+
+Non-linearity and non-equal variances are fatal flaws. Options are to consider different models possibly including transforming variables.
+
+Non-normality is not necessarily fatal. With a large enough sample, the following calculations are still approximately correct:
+
+1. The p-value for $H_0:\beta_1=0$ versus $H_0:\beta_1\ne 0$
+2. The confidence interval for $\beta_1$
+3. The confidence interval for the mean response at $x_0$.
+
+But non-normality *is* fatal for the prediction interval at $x_0$.
+
+## Non-normality and prediction intervals
+
+
+
+```{r, message=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+n <- 10000
+x <- seq(0, 10, length.out = n)
+y <- 1 + 0.5*x + runif(n, -2, 2)
+preds <- predict(lm(y~x), interval="p")
+cbind(data.frame(x, y), preds) %>%
+  ggplot(aes(x,y)) +
+  geom_point(size=0.2, alpha=0.1, color="blue") +
+  geom_ribbon(aes(ymin=lwr, ymax=upr), color="red", alpha=0.2)
+```
+
+In this example the simulated error follows a uniform distribution rather than a normal distribution. The sample size is $n = `r n`$. Pointwise prediction intervals are in red.
+
+```{r, fig.align='center'}
+cbind(data.frame(x, y), preds) %>% 
+  ggplot(aes(x,y)) +
+  geom_point(size=0.2, alpha=0.1, color="blue") +
+  geom_ribbon(aes(ymin=lwr, ymax=upr), color="red", alpha=0.2)
+```
+
+
+## Textbook notes
+
+We have covered 11.1 to 11.6, 11.8, the diagnostic parts of 11.10, and 11.12.
+
+I wouldn't bother with 11.7. It is a strange little section out of place in Chapter 11.
+
+11.9 concerns formally testing for non-linearity in a specific situation that don't come up all that much in practice, so we skip this section.
+
+Much of 11.10 concerns solving model violation problems, which can be summarized simply as "try taking logarithms or square roots of one or both variables until the situation improves" and I won't cover it directly. The diagnostic plots were covered in this course.
+
+11.11 is a case study, which is fine to look at.
+
+# Regression in general
+
+## Models { .build }
+
+We've analyzed the special case $y_i = \beta_0 + \beta_1 x_i + \ve_i$ with $\ve_i \sim N(\mu, \sigma^2)$. 
+
+The linear regression model in general ("multiple regression") is:
+$$y_i = \beta_0 + \beta_1 x_{1i} + \cdots + \beta_k x_{ki} + \ve_i$$
+
+Matrix notation is more efficient---will revisit this momentarily.
+
+$y$ is random. The inputs are not random. They can be whatever you like, even functions of one another, with one technical limitation, which we'll see momentarily. So these are valid linear models:
+
+$$\begin{align*}
+y_i &= \beta_0 + \beta_1 x_{1i} + \beta_2 x_{2i} + \ve_i, \quad \text{both dummy variables}\\
+y_i &= \beta_0 + \beta_1 x_{1i} + \beta_2 x^2_{1i} + \ve_i\\
+y_i &= \beta_0 + \beta_1 x_{1i} + \beta_2 \log{x_{1i}} + \ve_i
+\end{align*}$$
+
+## What is being done?
+
+```{r}
+data(trees)
+```
+
+R comes with some sample datasets. One is called `trees` and has variables `r names(trees)[1]`, `r names(trees)[2]`, and `r names(trees)[3]`. Here's a 3d plot:
+
+```{r, fig.align='center'}
+library(scatterplot3d)
+s3d <- scatterplot3d(trees, type="h", highlight.3d=FALSE,
+angle=55, scale.y=0.7, pch=16, main="Volume versus height and girth")
+```
+
+## Fitting a surface to the points
+
+```{r, fig.align='center', fig.height=6}
+s3d <- scatterplot3d(trees, type="h", highlight.3d=FALSE,
+angle=55, scale.y=0.7, pch=16, main="Volume versus height and girth")
+my.lm <- lm(Volume ~ Girth + Height, data=trees)
+s3d$plane3d(my.lm)
+```
+
+## General notation
+
+$$\boldsymbol{y} = \boldsymbol X\boldsymbol{\beta}+\boldsymbol{\varepsilon}$$
+$$\boldsymbol{y} = \begin{bmatrix}y_1\\\vdots\\y_n\end{bmatrix}
+\qquad
+\boldsymbol{\beta} = 
+\begin{bmatrix}\beta_0\\\beta_1\\\vdots\\\beta_k
+\end{bmatrix}
+\qquad
+\boldsymbol{\varepsilon} = 
+\begin{bmatrix}
+\varepsilon_1\\
+\varepsilon_2\\
+\vdots\\
+\varepsilon_n\\
+\end{bmatrix}$$ 
+The $\ve_i$ are independent $N(0, \sigma^2)$ random variables.
+$$\boldsymbol{X} = 
+\begin{bmatrix}
+1&x_{11}&x_{21}&\cdots&x_{k1}\\
+1&x_{12}&x_{22}&\cdots&x_{k2}\\
+\vdots&\vdots&\vdots&\vdots&\vdots\\
+1&x_{1n}&x_{2n}&\cdots&x_{kn}\\
+\end{bmatrix}
+$$
+
+## The Fundamental Issues 
+
+* Familiar issues with similar answers
+    + Parameter testing and estimation
+    + Mean response and prediction
+    + Model assumptions
+* New issues:
+    + Parameter interpretation
+    + Model selection: which variables?
+    + "Multicollinearity" (correlated inputs)
+
+## Multiple regression parameter estimation 
+
+$$y_i = \beta_0 + \beta_1 x_{1i} + \cdots + \beta_k x_{ki} + \ve_i$$
+
+> $\beta_i$ is:
+
+>* the change in $y$
+>* given an increase of one unit of $x_i$
+>* **given [values of] all other variables in the model**.
+
+## Multiple Regression Parameter Hypothesis Testing (Interpretation) { .build }
+
+$$y_i = \beta_0 + \beta_1 x_{1i} + \cdots + \beta_k x_{ki} + \ve_i$$
+
+The canonical hypothesis test for a single parameter:
+$$\begin{align*}
+H_0: \beta_i &= 0\\
+H_1: \beta_i &\ne 0
+\end{align*}$$
+
+If $H_0$ is true, it means the $i$th variable ($x_i$) is 
+not significantly related to $y$...
+
+...**given all the other $x$'s in the model**
+
+## Multiple Regression Parameter Hypothesis Testing (Interpretation) { .build }
+
+$$y_i = \beta_0 + \beta_1 x_{1i} + \cdots + \beta_k x_{ki} + \ve_i$$
+
+"Is there any linear relationship between $y$ and the input variables?"
+
+Informally expressed as:
+
+$$\begin{align*}
+H_0:&\ \beta_1 = \beta_2 = \cdots = \beta_k = 0\\
+H_1:&\ \text{Any } \beta_i\ne 0
+\end{align*}$$
+
+
+
+## Parameter estimates in matrix form { .build }
+
+$$\bs{\hat\beta}=\bs{(X^\prime X)^{-1}X^\prime y}$$
+
+The matrix $\bs{X^\prime X}$, and the fact is must be inverted, plays a key role in multiple regression analysis. 
+
+For instance, let's divine the technical requirements on the input variables $X$. 
+
+Requirement: no linear dependence (includes "no constants").
+
+## Properties of the parameter estimates { .build }
+
+Expected values and variances of vectors of random variables works in a non-shocking way. 
+
+A summary of the important results:
+
+$$E(\bs y) = \bs\beta$$
+So we have $\bs{\hat\beta}$ is unbiased for $\bs\beta$.
+
+Also:
+$$\Var{\bs{\hat\beta}} = \sigma^2\bs{(X^\prime X)^{-1}}$$
+
+Let's denote the diagonal of $\bs{(X^\prime X)^{-1}}$ by:
+$$c_{00},c_{11},\ldots,c_{kk}$$
+
+## Distribution of components of $\bs\beta$ { .build }
+
+Same as always:
+$$\frac{\hat\beta_i - \beta_i}{\sigma\sqrt{c_{ii}}}\sim N(0,1)$$
+
+We don't know the value of $\sigma^2$. So we do the same thing as in simple regression.
+
+Denote by $\hat y_i$ the fitted value at $\bs{x_i}$:
+$$\hat y_i = \hat\beta_0 + \hat\beta_1 x_{1i} + \ldots 
++\hat\beta_k x_{ki}$$
+
+If we denote the $i^{th}$ row of the $\bs X$ matrix by $\bs{x_i^\prime} = [1\quad x_{1i} \quad x_{2i}\ \cdots\ x_{ki}]$ this can be re-written as $\hat y_i = \bs{x_i^\prime}\bs{\hat\beta}$.
+
+The residuals $\hat\ve_i = y_i - \hat y_i$ are also the same as before.
+
+## Estimating the error variance
+
+We end up with the sum of squares decompostion, which is also the same as before:
+
+$$\sum_{i=1}^n\left(y_i - \overline y\right)^2 = \sum_{i=1}^n\left(\hat y_i - \overline y\right)^2 +
+\sum_{i=1}^n\left(y_i - \hat y_i\right)^2$$
+
+They are all sums of squares of normal distributions.
+
+So they have $\chi^2$ distributions. The degrees of freedom are $n-1$, $k$, and $n-(k+1)$, respectively. (They add up!)
+
+And we have our estimator for $\sigma^2$:
+$$MSE = \frac{SSE}{n-(k+1)}$$
+
+## Distribution of components of $\bs\beta$ again { .build }
+
+$$\frac{\hat\beta_i - \beta_i}{\sqrt{MSE}\sqrt{c_{ii}}}\sim ???$$
+
+Confidence intervals and hypothesis tests proceed as usual.
+
+## `trees` example 
+
+```{r}
+trees %>% 
+  lm(Volume ~ Girth + Height, data = .) %>% 
+  summary
+```
+
+## The "overall" hypothesis test { .build }
+
+$$\begin{align*}
+H_0:&\ \beta_1 = \beta_2 = \cdots = \beta_k = 0\\
+H_1:&\ \text{Any } \beta_i\ne 0
+\end{align*}$$
+
+Similar to before. A few slides ago we had $SST = SSR + SSE$ with $n-1$, $k$, and $n-(k+1)$ degrees of freedom. From this we can define $MSR = SSR/k$ and we use:
+$$\frac{MSR}{MSE} \sim F_{k, n-(k+1)}$$
+
+(Note: there is no $T^2 = F$ relationship to be had, unlike in the simple regression case.)
+
+## `trees` example again
+
+```{r}
+trees %>% 
+  lm(Volume ~ Girth + Height, data = .) %>% 
+  summary
+```
+
+## `trees` ANOVA table
+
+```{r, echo=TRUE}
+trees %>% 
+  lm(Volume ~ Girth + Height, data = .) %>% 
+  anova
+```
+
+
+## $R^2$
+
+Same as before:
+$$R^2 = \frac{\text{SSR}}{\text{SST}} = 1-\frac{\text{SSE}}{\text{SST}}$$
+
+Same old meaning, now with even more potential for abuse!
+
+(Note: square root of $R^2$ is now nothing in particular in multiple regression)
+
+
+
