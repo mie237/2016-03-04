@@ -1,7 +1,7 @@
 ---
 title: 'MIE237'
 author: "Neil Montgomery"
-date: "2016-03-01"
+date: "2016-03-04"
 output: 
   ioslides_presentation: 
     css: 'styles.css' 
@@ -50,7 +50,7 @@ y <- 1 + 0.5*x + runif(n, -2, 2)
 preds <- predict(lm(y~x), interval="p")
 cbind(data.frame(x, y), preds) %>%
   ggplot(aes(x,y)) +
-  geom_point(size=0.2, alpha=0.1, color="blue") +
+  geom_point(size=0.2, alpha=0.3, color="blue") +
   geom_ribbon(aes(ymin=lwr, ymax=upr), color="red", alpha=0.2)
 ```
 
@@ -211,7 +211,7 @@ Expected values and variances of vectors of random variables works in a non-shoc
 
 A summary of the important results:
 
-$$E(\bs y) = \bs\beta$$
+$$E(\bs{\hat\beta}) = \bs\beta$$
 So we have $\bs{\hat\beta}$ is unbiased for $\bs\beta$.
 
 Also:
@@ -291,7 +291,7 @@ trees %>%
   anova
 ```
 
-
+In R the regression SS line is split up into all the 1 degree of freedom components.
 ## $R^2$
 
 Same as before:
